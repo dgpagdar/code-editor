@@ -93,6 +93,24 @@ const EditorPage = () => {
         }
     }
 
+    function leaveRoom() {
+        // reactNavigator('/');
+
+        const s = socketRef.current;
+        try {
+            if (s) {
+                // (optional but nice) let server update its room map immediately
+                s.emit(ACTIONS.LEAVE, { roomId, username: location.state?.username });
+
+                // tear down the socket so the server fires its 'disconnect' handlers
+                s.disconnect();
+                socketRef.current = null;
+            }
+        } finally {
+            reactNavigator('/');
+        }
+    }
+
 
     if (!location.state) {
         return <Navigate to="/" />;
@@ -119,7 +137,7 @@ const EditorPage = () => {
                     </div>
                 </div>
                 <button className="btn copyBtn" onClick={copyRoomId}>Copy ROOM ID</button>
-                <button className="btn leaveBtn">Leave</button>
+                <button className="btn leaveBtn" onClick={leaveRoom}>Leave</button>
 
             </div>
             <div className="editorWrap">
