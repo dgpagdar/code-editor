@@ -1,70 +1,242 @@
-# Getting Started with Create React App
+# Realtime Code Editor – Local Setup Guide
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A quick, copy‑paste README so anyone can run your **React + Express + Socket.IO** app **locally** on their machine.
 
-## Available Scripts
+> **Note**: This project is intended to run locally with a separate Node socket server. Cloud platforms like Vercel (static sites) do **not** run long‑lived WebSocket servers.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Prerequisites
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+* **Node.js** ≥ 18 (recommend LTS)
+* **npm** (bundled with Node) or **Yarn**
+* **Git**
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Check your versions:
 
-### `npm test`
+```bash
+node -v
+npm -v
+# or
+yarn -v
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+---
 
-### `npm run build`
+## 1) Clone the repo & install dependencies
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+# clone
+git clone <YOUR_REPO_URL>.git
+cd <YOUR_REPO_FOLDER>
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# install deps (choose one)
+npm install
+# or
+yarn
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+> If your install fails, delete `node_modules` and try again. Make sure you are on Node 18+.
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 2) Create a .env file (client uses this)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Create a file named **`.env`** in the project **root** directory with:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```env
+REACT_APP_BACKEND_URL=http://localhost:6000
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+* The React app reads this at **build/start time**.
+* `REACT_APP_BACKEND_URL` must point to your **local** socket server URL.
 
-## Learn More
+> If you later change this value, stop and re‑start the React dev server so it picks up the change.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 3) Start the Socket.IO server (port 6000 by default)
 
-### Code Splitting
+There are a few common ways wired in `package.json`. Try in this order:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```bash
+# hot‑reload dev server (if available)
+npm run server:dev
+# or plain start
+npm run server
+# or directly
+node server.js
+```
 
-### Analyzing the Bundle Size
+You should see a log like:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```
+Socket server listening on 6000
+```
 
-### Making a Progressive Web App
+> If port **6000** is busy, either kill the process (see Troubleshooting) or run with a different port:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```bash
+PORT=7000 node server.js
+```
 
-### Advanced Configuration
+…and update your `.env` to `REACT_APP_BACKEND_URL=http://localhost:7000`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+---
 
-### Deployment
+## 4) Start the React client (port 3000 by default)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+```bash
+npm start
+# or
+yarn start
+```
 
-### `npm run build` fails to minify
+Then open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+## 5) Use the app
+
+1. Open the site at **[http://localhost:3000](http://localhost:3000)**.
+2. Enter a **Room ID** and **Username**.
+3. Click **Join**.
+4. Open another tab/window and join the same Room ID to see real‑time editing sync.
+
+---
+
+## Expected project scripts (for reference)
+
+If some commands above are missing, add these to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+
+    "server": "node server.js",
+    "server:dev": "nodemon server.js"
+  }
+}
+```
+
+> If you are not using Create React App, replace `react-scripts` with your framework’s start/build commands.
+
+---
+
+## Socket client configuration (FYI)
+
+Your client should initialize Socket.IO like this:
+
+```js
+import { io } from 'socket.io-client';
+
+export const initSocket = () =>
+  io(process.env.REACT_APP_BACKEND_URL, {
+    forceNew: true,
+    reconnectionAttempts: Infinity,
+    timeout: 10000,
+    transports: ['websocket', 'polling'] // allow fallback when websockets are blocked
+  });
+```
+
+---
+
+## Optional: CORS for the server
+
+Local dev on `localhost` usually needs no special CORS config. If you see CORS errors, enable it:
+
+```js
+// server.js
+const http = require('http');
+const express = require('express');
+const cors = require('cors');
+const { Server } = require('socket.io');
+
+const app = express();
+app.use(cors({ origin: ['http://localhost:3000'], methods: ['GET','POST'] }));
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: ['http://localhost:3000'], methods: ['GET','POST'] }
+});
+
+const PORT = process.env.PORT || 6000;
+server.listen(PORT, () => console.log(`Socket server listening on ${PORT}`));
+```
+
+---
+
+## Troubleshooting
+
+### “Socket connection failed” in the browser
+
+* **Server not running** → Start the server (`npm run server:dev` or `node server.js`).
+* **Wrong URL** → Make sure `.env` has `REACT_APP_BACKEND_URL=http://localhost:6000` **and** you restarted `npm start` after creating/changing `.env`.
+* **Port conflict** → Another process is on 6000. Either kill it (below) or change the port.
+* **Mixed protocols** → In local dev, use `http://` on both client and server.
+
+### Change or free a port
+
+* Run on a different port:
+
+  ```bash
+  PORT=7000 node server.js
+  ```
+* **macOS / Linux – kill a port**
+
+  ```bash
+  lsof -i :6000
+  kill -9 <PID>
+  ```
+* **Windows – kill a port**
+
+  ```powershell
+  netstat -ano | findstr :6000
+  taskkill /PID <PID> /F
+  ```
+
+### Env var didn’t apply
+
+* CRA/React dev servers read env at start. **Stop** `npm start` and run it again after editing `.env`.
+
+### Where to put `.env`?
+
+* In the **project root** (same folder as your `package.json`).
+* Do **not** commit secrets. Add `.env` to `.gitignore`.
+
+---
+
+## Project layout (typical)
+
+```
+project-root/
+├─ server.js             # Express + Socket.IO server
+├─ src/                  # React app source
+│  ├─ components/
+│  ├─ pages/
+│  ├─ socket.js         # Socket client init
+│  └─ ...
+├─ package.json
+├─ .env                  # REACT_APP_BACKEND_URL=http://localhost:6000
+└─ README.md
+```
+
+> If your React code isn’t in `src/`, just keep the `.env` in the same folder as `package.json` and ensure the socket client imports that env.
+
+---
+
+## Notes
+
+* This setup is **local‑only**. For production, host the UI and a **separate** long‑running Node server (Render/Railway/Fly/EC2, etc.).
+* Never hard‑code `localhost` for production builds.
+* Keep `.env` out of version control (`.gitignore`).
+
+---
+
+## License
+
+Add your preferred license here (e.g., MIT) if you plan to open‑source.
